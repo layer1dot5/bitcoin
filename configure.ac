@@ -60,7 +60,7 @@ AM_INIT_AUTOMAKE([1.13 no-define subdir-objects foreign])
 AM_MAINTAINER_MODE([enable])
 
 dnl make the compilation flags quiet unless V=1 is used
-AM_SILENT_RULES([yes])
+dnl AM_SILENT_RULES([yes])
 
 dnl Compiler checks (here before libtool).
 if test "${CXXFLAGS+set}" = "set"; then
@@ -329,6 +329,13 @@ AC_ARG_ENABLE([lto],
     [AS_HELP_STRING([--enable-lto],[build using LTO (default is no)])],
     [enable_lto=$enableval],
     [enable_lto=no])
+
+AC_ARG_ENABLE([limited-api],
+    [AS_HELP_STRING([--enable-limited-api],[build just limited consensus API for libconsensus for limited architectures like WASM (default is no)])],
+    [enable_limited_api=$enableval],
+    [enable_limited_api=no])
+
+AM_CONDITIONAL([LIMITED_API], [test "$enable_limited_api" = "yes"])
 
 AC_LANG_PUSH([C++])
 
@@ -1000,10 +1007,12 @@ fi
 
 AC_CHECK_HEADERS([endian.h sys/endian.h byteswap.h sys/select.h sys/prctl.h sys/sysctl.h vm/vm_param.h sys/vmmeter.h sys/resources.h])
 
+if test $enable_limited_api != "yes"; then
 AC_CHECK_DECLS([getifaddrs, freeifaddrs],[CHECK_SOCKET],,
     [#include <sys/types.h>
     #include <ifaddrs.h>]
 )
+fi
 
 dnl These are used for daemonization in bitcoind
 AC_CHECK_DECLS([fork])

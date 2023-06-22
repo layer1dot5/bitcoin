@@ -8,7 +8,9 @@
 #include <compat/cpuid.h>
 #include <crypto/sha256.h>
 #include <crypto/sha512.h>
+#ifndef __EMSCRIPTEN__
 #include <logging.h>
+#endif
 #include <randomenv.h>
 #include <span.h>
 #include <support/allocators/secure.h>
@@ -42,7 +44,9 @@
 
 [[noreturn]] static void RandFailure()
 {
+#ifndef __EMSCRIPTEN__
     LogPrintf("Failed to read randomness, aborting\n");
+#endif
     std::abort();
 }
 
@@ -91,6 +95,7 @@ static void InitHardwareRand()
     }
 }
 
+#ifndef __EMSCRIPTEN__
 static void ReportHardwareRand()
 {
     // This must be done in a separate function, as InitHardwareRand() may be indirectly called
@@ -102,6 +107,7 @@ static void ReportHardwareRand()
         LogPrintf("Using RdRand as an additional entropy source\n");
     }
 }
+#endif
 
 /** Read 64 bits of entropy using rdrand.
  *
@@ -515,8 +521,9 @@ static void SeedPeriodic(CSHA512& hasher, RNGState& rng) noexcept
     // Dynamic environment data (performance monitoring, ...)
     auto old_size = hasher.Size();
     RandAddDynamicEnv(hasher);
+#ifndef __EMSCRIPTEN__
     LogPrint(BCLog::RAND, "Feeding %i bytes of dynamic environment data into RNG\n", hasher.Size() - old_size);
-
+#endif
     // Strengthen for 10 ms
     SeedStrengthen(hasher, rng, 10ms);
 }
@@ -535,7 +542,9 @@ static void SeedStartup(CSHA512& hasher, RNGState& rng) noexcept
 
     // Static environment data
     RandAddStaticEnv(hasher);
+#ifndef __EMSCRIPTEN__
     LogPrint(BCLog::RAND, "Feeding %i bytes of environment data into RNG\n", hasher.Size() - old_size);
+#endif
 
     // Strengthen for 100 ms
     SeedStrengthen(hasher, rng, 100ms);
@@ -696,7 +705,9 @@ void RandomInit()
     // Invoke RNG code to trigger initialization (if not already performed)
     ProcRand(nullptr, 0, RNGLevel::FAST);
 
+#ifndef __EMSCRIPTEN__
     ReportHardwareRand();
+#endif
 }
 
 std::chrono::microseconds GetExponentialRand(std::chrono::microseconds now, std::chrono::seconds average_interval)
