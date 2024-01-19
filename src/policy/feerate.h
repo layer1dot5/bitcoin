@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
+#include <cmath>
 
 const std::string CURRENCY_UNIT = "BTC"; // One formatted unit
 const std::string CURRENCY_ATOM = "sat"; // One indivisible minimum value unit
@@ -39,7 +40,7 @@ public:
     /** Fee rate of 0 satoshis per kvB */
     CFeeRate() : nSatoshisPerK(0) { }
     template<typename I>
-    explicit CFeeRate(const I _nSatoshisPerK): nSatoshisPerK(_nSatoshisPerK) {
+    constexpr explicit CFeeRate(const I _nSatoshisPerK): nSatoshisPerK(_nSatoshisPerK) {
         // We've previously had bugs creep in from silent double->int conversion...
         static_assert(std::is_integral<I>::value, "CFeeRate should be used without floats");
     }
@@ -57,7 +58,21 @@ public:
      * If the calculated fee would have fractional satoshis, then the
      * returned fee will always be rounded up to the nearest satoshi.
      */
-    CAmount GetFee(uint32_t num_bytes) const;
+    constexpr CAmount GetFee(uint32_t num_bytes) const
+    {
+        const int64_t nSize{num_bytes};
+
+        // Be explicit that we're converting from a double to int64_t (CAmount) here.
+        // We've previously had issues with the silent double->int64_t conversion.
+        CAmount nFee{static_cast<CAmount>(std::ceil(nSatoshisPerK * nSize / 1000.0))};
+
+        if (nFee == 0 && nSize != 0) {
+            if (nSatoshisPerK > 0) nFee = CAmount(1);
+            if (nSatoshisPerK < 0) nFee = CAmount(-1);
+        }
+
+        return nFee;
+    }
 
     /**
      * Return the fee in satoshis for a vsize of 1000 vbytes
