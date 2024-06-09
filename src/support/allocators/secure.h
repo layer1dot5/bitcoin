@@ -6,7 +6,9 @@
 #ifndef BITCOIN_SUPPORT_ALLOCATORS_SECURE_H
 #define BITCOIN_SUPPORT_ALLOCATORS_SECURE_H
 
+#ifndef __EMSCRIPTEN__
 #include <support/lockedpool.h>
+#endif
 #include <support/cleanse.h>
 
 #include <memory>
@@ -20,17 +22,25 @@ template <typename T>
 struct secure_allocator {
     using value_type = T;
 
+#ifdef __EMSCRIPTEN__
+    std::allocator<value_type> default_allocator;
+#endif
+
     secure_allocator() = default;
     template <typename U>
     secure_allocator(const secure_allocator<U>&) noexcept {}
 
     T* allocate(std::size_t n)
     {
+#ifndef __EMSCRIPTEN__
         T* allocation = static_cast<T*>(LockedPoolManager::Instance().alloc(sizeof(T) * n));
         if (!allocation) {
             throw std::bad_alloc();
         }
         return allocation;
+#else
+        return default_allocator.allocate(n);
+#endif
     }
 
     void deallocate(T* p, std::size_t n)
@@ -38,7 +48,11 @@ struct secure_allocator {
         if (p != nullptr) {
             memory_cleanse(p, sizeof(T) * n);
         }
+#ifndef __EMSCRIPTEN__
         LockedPoolManager::Instance().free(p);
+#else
+        default_allocator.deallocate(p, n);
+#endif
     }
 
     template <typename U>

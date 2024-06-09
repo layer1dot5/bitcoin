@@ -12,7 +12,9 @@
 #include <crypto/chacha20.h>
 #include <crypto/sha256.h>
 #include <crypto/sha512.h>
+#ifndef LIMITED_API
 #include <logging.h>
+#endif
 #include <randomenv.h>
 #include <span.h>
 #include <support/allocators/secure.h>
@@ -23,7 +25,9 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#ifndef __EMSCRIPTEN__
 #include <thread>
+#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -33,7 +37,7 @@
 #include <sys/time.h>
 #endif
 
-#if defined(HAVE_GETRANDOM) || (defined(HAVE_GETENTROPY_RAND) && defined(MAC_OSX))
+#if defined(HAVE_GETRANDOM) || (defined(HAVE_GETENTROPY_RAND) && defined(MAC_OSX) || defined(__EMSCRIPTEN__))
 #include <sys/random.h>
 #endif
 
@@ -44,9 +48,26 @@
 #include <sys/auxv.h>
 #endif
 
+#ifdef __EMSCRIPTEN__
+extern "C" double emscripten_get_now(void);
+int64_t GetTimeMicros()
+{
+    union {
+        double fractional;
+        int64_t integer;
+    } value;
+    value.fractional = emscripten_get_now();
+
+    return value.integer;
+}
+
+#endif
+
 [[noreturn]] static void RandFailure()
 {
+#ifndef LIMITED_API
     LogPrintf("Failed to read randomness, aborting\n");
+#endif
     std::abort();
 }
 
@@ -64,6 +85,8 @@ static inline int64_t GetPerformanceCounter() noexcept
     uint64_t r1 = 0, r2 = 0;
     __asm__ volatile ("rdtsc" : "=a"(r1), "=d"(r2)); // Constrain r1 to rax and r2 to rdx.
     return (r2 << 32) | r1;
+#elif defined(__EMSCRIPTEN__)
+    return GetTimeMicros();
 #else
     // Fall back to using standard library clock (usually microsecond or nanosecond precision)
     return std::chrono::high_resolution_clock::now().time_since_epoch().count();
@@ -95,6 +118,7 @@ static void InitHardwareRand()
     }
 }
 
+#ifndef LIMITED_API
 static void ReportHardwareRand()
 {
     // This must be done in a separate function, as InitHardwareRand() may be indirectly called
@@ -106,6 +130,7 @@ static void ReportHardwareRand()
         LogPrintf("Using RdRand as an additional entropy source\n");
     }
 }
+#endif
 
 /** Read 64 bits of entropy using rdrand.
  *
@@ -322,7 +347,7 @@ static void Strengthen(const unsigned char (&seed)[32], SteadyClock::duration du
     memory_cleanse(buffer, sizeof(buffer));
 }
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__EMSCRIPTEN__)
 /** Fallback: get 32 bytes of system entropy from /dev/urandom. The most
  * compatible way to get cryptographic randomness on UNIX-ish platforms.
  */
@@ -376,7 +401,7 @@ void GetOSRand(unsigned char *ent32)
        The function call is always successful.
      */
     arc4random_buf(ent32, NUM_OS_RANDOM_BYTES);
-#elif defined(HAVE_GETENTROPY_RAND) && defined(MAC_OSX)
+#elif defined(HAVE_GETENTROPY_RAND) && defined(MAC_OSX) || defined(__EMSCRIPTEN__)
     if (getentropy(ent32, NUM_OS_RANDOM_BYTES) != 0) {
         RandFailure();
     }
@@ -572,8 +597,9 @@ static void SeedPeriodic(CSHA512& hasher, RNGState& rng) noexcept
     // Dynamic environment data (performance monitoring, ...)
     auto old_size = hasher.Size();
     RandAddDynamicEnv(hasher);
+#ifndef LIMITED_API
     LogPrint(BCLog::RAND, "Feeding %i bytes of dynamic environment data into RNG\n", hasher.Size() - old_size);
-
+#endif
     // Strengthen for 10 ms
     SeedStrengthen(hasher, rng, 10ms);
 }
@@ -592,7 +618,9 @@ static void SeedStartup(CSHA512& hasher, RNGState& rng) noexcept
 
     // Static environment data
     RandAddStaticEnv(hasher);
+#ifndef LIMITED_API
     LogPrint(BCLog::RAND, "Feeding %i bytes of environment data into RNG\n", hasher.Size() - old_size);
+#endif
 
     // Strengthen for 100 ms
     SeedStrengthen(hasher, rng, 100ms);
@@ -756,11 +784,15 @@ void RandomInit()
     // Invoke RNG code to trigger initialization (if not already performed)
     ProcRand(nullptr, 0, RNGLevel::FAST);
 
+#ifndef LIMITED_API
     ReportHardwareRand();
+#endif
 }
 
+#ifndef __EMSCRIPTEN__
 std::chrono::microseconds GetExponentialRand(std::chrono::microseconds now, std::chrono::seconds average_interval)
 {
     double unscaled = -std::log1p(GetRand(uint64_t{1} << 48) * -0.0000000000000035527136788 /* -1/2^48 */);
     return now + std::chrono::duration_cast<std::chrono::microseconds>(unscaled * average_interval + 0.5us);
 }
+#endif

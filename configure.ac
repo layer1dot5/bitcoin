@@ -99,6 +99,16 @@ esac
 dnl Require C++20 compiler (no GNU extensions)
 AX_CXX_COMPILE_STDCXX([20], [noext], [mandatory])
 
+compiler_name=`basename "$CC"`
+if test "x$compiler_name" = "xemcc"; then
+    with_emscripten=yes
+else
+    with_emscripten=no
+fi
+
+dnl check if additional link flags are required for std::filesystem
+CHECK_FILESYSTEM
+
 dnl Unless the user specified OBJCXX, force it to be the same as CXX. This ensures
 dnl that we get the same -std flags for both.
 m4_ifdef([AC_PROG_OBJCXX],[
@@ -296,6 +306,13 @@ AC_ARG_ENABLE([external-signer],
     [use_external_signer=$enableval],
     [use_external_signer=yes])
 
+AC_ARG_ENABLE([limited-api],
+    [AS_HELP_STRING([--enable-limited-api],[build just limited consensus API for libconsensus for limited architectures like WASM (default is no)])],
+    [enable_limited_api=$enableval],
+    [enable_limited_api=no])
+
+AM_CONDITIONAL([LIMITED_API], [test "$enable_limited_api" = "yes"])
+
 AC_LANG_PUSH([C++])
 
 dnl Always set -g -O2 in our CXXFLAGS. Autoconf will try and set CXXFLAGS to "-g -O2" by default,
@@ -343,8 +360,10 @@ if test "$enable_debug" = "yes"; then
     [$CXXFLAG_WERROR])
 
   AX_CHECK_PREPROC_FLAG([-DDEBUG], [DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DDEBUG"], [], [$CXXFLAG_WERROR])
+if test "x$with_emscripten" != "xyes"; then
   AX_CHECK_PREPROC_FLAG([-DDEBUG_LOCKORDER], [DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DDEBUG_LOCKORDER"], [], [$CXXFLAG_WERROR])
   AX_CHECK_PREPROC_FLAG([-DDEBUG_LOCKCONTENTION], [DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DDEBUG_LOCKCONTENTION"], [], [$CXXFLAG_WERROR])
+fi
   AX_CHECK_PREPROC_FLAG([-DRPC_DOC_CHECK], [DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DRPC_DOC_CHECK"], [], [$CXXFLAG_WERROR])
   AX_CHECK_PREPROC_FLAG([-DABORT_ON_FAILED_ASSUME], [DEBUG_CPPFLAGS="$DEBUG_CPPFLAGS -DABORT_ON_FAILED_ASSUME"], [], [$CXXFLAG_WERROR])
   AX_CHECK_COMPILE_FLAG([-ftrapv], [DEBUG_CXXFLAGS="$DEBUG_CXXFLAGS -ftrapv"], [], [$CXXFLAG_WERROR])
@@ -1602,8 +1621,10 @@ else
   AC_MSG_RESULT([no])
 fi
 
+if test "$enable_limited_api" != "yes"; then
 if test "$build_bitcoin_wallet$build_bitcoin_cli$build_bitcoin_tx$build_bitcoin_util$build_bitcoind$bitcoin_enable_qt$enable_fuzz_binary$use_bench$use_tests" = "nonononononononono"; then
   AC_MSG_ERROR([No targets! Please specify at least one of: --with-utils --with-daemon --with-gui --enable-fuzz(-binary) --enable-bench or --enable-tests])
+fi
 fi
 
 AM_CONDITIONAL([TARGET_DARWIN], [test "$TARGET_OS" = "darwin"])

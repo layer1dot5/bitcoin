@@ -39,6 +39,9 @@ LIBSECP256K1=secp256k1/libsecp256k1.la
 if ENABLE_ZMQ
 LIBBITCOIN_ZMQ=libbitcoin_zmq.a
 endif
+if LIMITED_API
+LIBBITCOINCONSENSUS=libbitcoinconsensus.la
+endif
 if BUILD_BITCOIN_KERNEL_LIB
 LIBBITCOINKERNEL=libbitcoinkernel.la
 endif
@@ -1002,7 +1005,29 @@ libbitcoinkernel_la_SOURCES = \
 # More details: https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
 libbitcoinkernel_la-clientversion.l$(OBJEXT): obj/build.h
 endif # BUILD_BITCOIN_KERNEL_LIB
-#
+
+# bitcoinconsensus library #
+if LIMITED_API
+noinst_LTLIBRARIES += $(LIBBITCOINCONSENSUS)
+
+libbitcoinconsensus_la_SOURCES = \
+  support/lockedpool.cpp \
+  support/cleanse.cpp \
+  random.cpp \
+  randomenv.cpp \
+  base58.cpp \
+  bech32.cpp \
+  core_read.cpp \
+  core_write.cpp \
+  policy/feerate.cpp \
+  $(libbitcoin_consensus_a_SOURCES)
+
+libbitcoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS) -static
+libbitcoinconsensus_la_LIBADD = $(LIBBITCOIN_CRYPTO)
+libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -DLIMITED_API -I$(builddir)/obj -I$(srcdir)/univalue/include -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
+libbitcoinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+
+endif
 
 CTAES_DIST =  crypto/ctaes/bench.c
 CTAES_DIST += crypto/ctaes/ctaes.c
@@ -1114,7 +1139,9 @@ endif
 include Makefile.minisketch.include
 
 include Makefile.crc32c.include
+if !LIMITED_API
 include Makefile.leveldb.include
+endif
 
 include Makefile.test_util.include
 include Makefile.test_fuzz.include

@@ -5,7 +5,9 @@
 #include <coins.h>
 
 #include <consensus/consensus.h>
+#ifndef __EMSCRIPTEN__
 #include <logging.h>
+#endif
 #include <random.h>
 #include <util/trace.h>
 
@@ -361,7 +363,9 @@ static bool ExecuteBackedWrapper(Func func, const std::vector<std::function<void
         for (const auto& f : err_callbacks) {
             f();
         }
+#ifndef __EMSCRIPTEN__
         LogPrintf("Error reading from database: %s\n", e.what());
+#endif
         // Starting the shutdown sequence and returning false to the caller would be
         // interpreted as 'entry not found' (as opposed to unable to read data), and
         // could lead to invalid interpretation. Just exit immediately, as we can't

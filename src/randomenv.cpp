@@ -256,7 +256,7 @@ void RandAddDynamicEnv(CSHA512& hasher)
     hasher << std::chrono::steady_clock::now().time_since_epoch().count();
     hasher << std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
-#ifndef WIN32
+#if !defined(WIN32) && !defined(__EMSCRIPTEN__)
     // Current resource usage.
     struct rusage usage = {};
     if (getrusage(RUSAGE_SELF, &usage) == 0) hasher << usage;
@@ -370,7 +370,7 @@ void RandAddStaticEnv(CSHA512& hasher)
     }
 #endif
 
-#if HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS
+#if HAVE_DECL_GETIFADDRS && HAVE_DECL_FREEIFADDRS && !defined(__EMSCRIPTEN__)
     // Network interfaces
     struct ifaddrs *ifad = nullptr;
     getifaddrs(&ifad);
@@ -398,6 +398,7 @@ void RandAddStaticEnv(CSHA512& hasher)
         hasher.Write((const unsigned char*)&name.machine, strlen(name.machine) + 1);
     }
 
+#ifndef __EMSCRIPTEN__
     /* Path and filesystem provided data */
     AddPath(hasher, "/");
     AddPath(hasher, ".");
@@ -415,6 +416,7 @@ void RandAddStaticEnv(CSHA512& hasher)
     AddFile(hasher, "/etc/resolv.conf");
     AddFile(hasher, "/etc/timezone");
     AddFile(hasher, "/etc/localtime");
+#endif
 #endif
 
     // For MacOS/BSDs, gather data through sysctl instead of /proc. Not all of these

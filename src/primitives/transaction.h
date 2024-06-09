@@ -188,12 +188,14 @@ public:
 
 struct CMutableTransaction;
 
+#ifndef SWIG
 struct TransactionSerParams {
     const bool allow_witness;
     SER_PARAMS_OPFUNC
 };
 static constexpr TransactionSerParams TX_WITH_WITNESS{.allow_witness = true};
 static constexpr TransactionSerParams TX_NO_WITNESS{.allow_witness = false};
+#endif
 
 /**
  * Basic transaction serialization format:
@@ -296,7 +298,7 @@ class CTransaction
 {
 public:
     // Default transaction version.
-    static const int32_t CURRENT_VERSION=2;
+    static const int32_t CURRENT_VERSION;
 
     // The local variables are made const to prevent unintended modification
     // without updating the cached hash value. However, CTransaction is not

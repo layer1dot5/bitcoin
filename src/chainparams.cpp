@@ -9,7 +9,9 @@
 #include <common/args.h>
 #include <consensus/params.h>
 #include <deploymentinfo.h>
+#ifndef __EMSCRIPTEN__
 #include <logging.h>
+#endif
 #include <tinyformat.h>
 #include <util/chaintype.h>
 #include <util/strencodings.h>
@@ -89,7 +91,9 @@ void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& opti
             if (vDeploymentParams[0] == VersionBitsDeploymentInfo[j].name) {
                 options.version_bits_parameters[Consensus::DeploymentPos(j)] = vbparams;
                 found = true;
+#ifndef __EMSCRIPTEN__
                 LogPrintf("Setting version bits activation parameters for %s to start=%ld, timeout=%ld, min_activation_height=%d\n", vDeploymentParams[0], vbparams.start_time, vbparams.timeout, vbparams.min_activation_height);
+#endif
                 break;
             }
         }

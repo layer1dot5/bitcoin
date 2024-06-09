@@ -71,6 +71,8 @@ Txid CMutableTransaction::GetHash() const
     return Txid::FromUint256((HashWriter{} << TX_NO_WITNESS(*this)).GetHash());
 }
 
+const int32_t CTransaction::CURRENT_VERSION = 2;
+
 bool CTransaction::ComputeHasWitness() const
 {
     return std::any_of(vin.begin(), vin.end(), [](const auto& input) {

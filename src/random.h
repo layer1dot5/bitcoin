@@ -13,7 +13,9 @@
 
 #include <bit>
 #include <cassert>
+#ifndef __EMSCRIPTEN__
 #include <chrono>
+#endif
 #include <cstdint>
 #include <limits>
 #include <vector>
@@ -97,6 +99,7 @@ D GetRandomDuration(typename std::common_type<D>::type max) noexcept
 constexpr auto GetRandMicros = GetRandomDuration<std::chrono::microseconds>;
 constexpr auto GetRandMillis = GetRandomDuration<std::chrono::milliseconds>;
 
+#ifndef __EMSCRIPTEN__
 /**
  * Return a timestamp in the future sampled from an exponential distribution
  * (https://en.wikipedia.org/wiki/Exponential_distribution). This distribution
@@ -107,6 +110,7 @@ constexpr auto GetRandMillis = GetRandomDuration<std::chrono::milliseconds>;
  * is the average interval between events.
  * */
 std::chrono::microseconds GetExponentialRand(std::chrono::microseconds now, std::chrono::seconds average_interval);
+#endif
 
 uint256 GetRandHash() noexcept;
 
