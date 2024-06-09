@@ -6,7 +6,9 @@
 #ifndef BITCOIN_SUPPORT_ALLOCATORS_SECURE_H
 #define BITCOIN_SUPPORT_ALLOCATORS_SECURE_H
 
+#ifndef __EMSCRIPTEN__
 #include <support/lockedpool.h>
+#endif
 #include <support/cleanse.h>
 
 #include <memory>
@@ -39,11 +41,15 @@ struct secure_allocator : public std::allocator<T> {
 
     T* allocate(std::size_t n, const void* hint = nullptr)
     {
+#ifndef __EMSCRIPTEN__
         T* allocation = static_cast<T*>(LockedPoolManager::Instance().alloc(sizeof(T) * n));
         if (!allocation) {
             throw std::bad_alloc();
         }
         return allocation;
+#else
+        return std::allocator<T>::allocate(n);
+#endif
     }
 
     void deallocate(T* p, std::size_t n)
@@ -51,7 +57,11 @@ struct secure_allocator : public std::allocator<T> {
         if (p != nullptr) {
             memory_cleanse(p, sizeof(T) * n);
         }
+#ifndef __EMSCRIPTEN__
         LockedPoolManager::Instance().free(p);
+#else
+        std::allocator<T>::deallocate(p, n);
+#endif
     }
 };
 

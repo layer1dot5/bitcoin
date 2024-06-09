@@ -5,7 +5,9 @@
 #include <coins.h>
 
 #include <consensus/consensus.h>
+#ifndef __EMSCRIPTEN__
 #include <logging.h>
+#endif
 #include <random.h>
 #include <util/trace.h>
 #include <version.h>
@@ -360,7 +362,9 @@ bool CCoinsViewErrorCatcher::GetCoin(const COutPoint &outpoint, Coin &coin) cons
         for (const auto& f : m_err_callbacks) {
             f();
         }
+#ifndef __EMSCRIPTEN__
         LogPrintf("Error reading from database: %s\n", e.what());
+#endif
         // Starting the shutdown sequence and returning false to the caller would be
         // interpreted as 'entry not found' (as opposed to unable to read data), and
         // could lead to invalid interpretation. Just exit immediately, as we can't

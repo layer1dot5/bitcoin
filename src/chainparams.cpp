@@ -10,7 +10,9 @@
 #include <consensus/merkle.h>
 #include <deploymentinfo.h>
 #include <hash.h> // for signet block challenge hash
+#ifndef __EMSCRIPTEN__
 #include <logging.h>
+#endif
 #include <script/interpreter.h>
 #include <util/string.h>
 
@@ -80,7 +82,9 @@ void ReadRegTestArgs(const ArgsManager& args, CChainParams::RegTestOptions& opti
             if (vDeploymentParams[0] == VersionBitsDeploymentInfo[j].name) {
                 options.version_bits_parameters[Consensus::DeploymentPos(j)] = vbparams;
                 found = true;
+#ifndef __EMSCRIPTEN__
                 LogPrintf("Setting version bits activation parameters for %s to start=%ld, timeout=%ld, min_activation_height=%d\n", vDeploymentParams[0], vbparams.start_time, vbparams.timeout, vbparams.min_activation_height);
+#endif
                 break;
             }
         }
