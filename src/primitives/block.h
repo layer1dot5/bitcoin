@@ -62,6 +62,8 @@ public:
     {
         return (int64_t)nTime;
     }
+
+    virtual std::string ToString() const;
 };
 
 
@@ -113,7 +115,7 @@ public:
         return block;
     }
 
-    std::string ToString() const;
+    std::string ToString() const override;
 };
 
 /** Describes a place in the block chain to another node such that if the
