@@ -1008,6 +1008,9 @@ endif # BUILD_BITCOIN_KERNEL_LIB
 
 # bitcoinconsensus library #
 if LIMITED_API
+
+$(LIBBITCOINCONSENSUS): $(LIBSECP256K1)
+
 noinst_LTLIBRARIES += $(LIBBITCOINCONSENSUS)
 
 libbitcoinconsensus_la_SOURCES = \
