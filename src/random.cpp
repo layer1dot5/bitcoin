@@ -216,11 +216,13 @@ static void InitHardwareRand()
 
 static void ReportHardwareRand()
 {
+#ifndef LIMITED_API
     // This must be done in a separate function, as InitHardwareRand() may be indirectly called
     // from global constructors, before logging is initialized.
     if (g_rndr_supported) {
         LogPrintf("Using RNDR and RNDRRS as additional entropy sources\n");
     }
+#endif
 }
 
 /** Read 64 bits of entropy using rndr.
