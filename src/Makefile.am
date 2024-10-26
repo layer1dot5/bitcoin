@@ -39,9 +39,9 @@ LIBSECP256K1=secp256k1/libsecp256k1.la
 if ENABLE_ZMQ
 LIBBITCOIN_ZMQ=libbitcoin_zmq.a
 endif
-if LIMITED_API
+
 LIBBITCOINCONSENSUS=libbitcoinconsensus.la
-endif
+
 if BUILD_BITCOIN_KERNEL_LIB
 LIBBITCOINKERNEL=libbitcoinkernel.la
 endif
@@ -1007,7 +1007,6 @@ libbitcoinkernel_la-clientversion.l$(OBJEXT): obj/build.h
 endif # BUILD_BITCOIN_KERNEL_LIB
 
 # bitcoinconsensus library #
-if LIMITED_API
 
 $(LIBBITCOINCONSENSUS): $(LIBSECP256K1)
 
@@ -1021,15 +1020,26 @@ libbitcoinconsensus_la_SOURCES = \
   base58.cpp \
   bech32.cpp \
   core_read.cpp \
-  core_write.cpp \
   policy/feerate.cpp \
   $(libbitcoin_consensus_a_SOURCES)
 
 libbitcoinconsensus_la_LDFLAGS = $(AM_LDFLAGS) -no-undefined $(RELDFLAGS) -static
 libbitcoinconsensus_la_LIBADD = $(LIBBITCOIN_CRYPTO)
-libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -DLIMITED_API -I$(builddir)/obj -I$(srcdir)/univalue/include -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
+libbitcoinconsensus_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(builddir)/obj -I$(srcdir)/univalue/include -I$(srcdir)/secp256k1/include -DBUILD_BITCOIN_INTERNAL
 libbitcoinconsensus_la_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 
+if LIMITED_API
+libbitcoinconsensus_la_CPPFLAGS += -DLIMITED_API
+else
+libbitcoinconsensus_la_SOURCES += \
+  clientversion.cpp \
+  logging.cpp \
+  sync.cpp \
+  util/check.cpp \
+  util/fs.cpp \
+  util/time.cpp \
+  util/threadnames.cpp \
+  util/syserror.cpp
 endif
 
 CTAES_DIST =  crypto/ctaes/bench.c
