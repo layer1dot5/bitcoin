@@ -276,7 +276,7 @@ struct IntIdentity
 
 /** Convert from one power-of-2 number base to another. */
 template<int frombits, int tobits, bool pad, typename O, typename It, typename I = IntIdentity>
-bool ConvertBits(O outfn, It it, It end, I infn = {}) {
+constexpr bool ConvertBits(O outfn, It it, It end, I infn = {}) {
     size_t acc = 0;
     size_t bits = 0;
     constexpr size_t maxv = (1 << tobits) - 1;
