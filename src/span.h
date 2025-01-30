@@ -108,6 +108,10 @@ class Span
 
 
 public:
+
+    typedef C element_type;
+    typedef std::remove_cv_t<element_type> value_type;
+
     constexpr Span() noexcept : m_data(nullptr) {}
 
     /** Construct a span from a begin pointer and a size.

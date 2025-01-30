@@ -27,6 +27,8 @@ protected:
     static_assert(WIDTH == sizeof(m_data), "Sanity check");
 
 public:
+    typedef uint8_t value_type;
+
     /* construct 0 value by default */
     constexpr base_blob() : m_data() {}
 
